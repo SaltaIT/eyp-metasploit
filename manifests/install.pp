@@ -36,12 +36,31 @@ class metasploit::install inherits metasploit {
     unless  => 'which git',
   }
 
+  exec { 'metasploit which bundle':
+    command => 'which bundle',
+    unless  => 'which bundle',
+  }
+
   exec { 'clone metasploit':
     cwd => $metasploit::basedir,
     command => 'git clone https://github.com/rapid7/metasploit-framework',
     timeout => 0,
     creates => "${metasploit::basedir}/metasploit-framework",
-    require => Exec[ [ 'metasploit which git', "metasploit mkdir -p ${metasploit::basedir}" ] ],
+    require => Exec[ [ 'metasploit which git', "metasploit mkdir -p ${metasploit::basedir}", 'metasploit which bundle' ] ],
+  }
+
+  file { "${metasploit::basedir}/metasploit-framework/database.yml":
+    ensure    => present,
+    owner     => 'root',
+    group     => 'root',
+    mode      => '0400',
+    content   => template("${module_name}/database_yaml.erb"),
+    require   => Exec['clone metasploit'],
+  }
+
+  exec { 'bundle install metasploit':
+    command => 'bundle install',
+    cwd     => "${metasploit::basedir}/metasploit-framework",
   }
 
 }
